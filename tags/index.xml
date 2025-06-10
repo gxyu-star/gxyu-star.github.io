@@ -6,6 +6,21 @@
     <description>Recent content in Tags on YGX</description>
     <generator>Hugo</generator>
     <language>en-us</language>
+    <lastBuildDate>Tue, 16 Nov 2021 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://gxyu-star.github.io/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>6DOF</title>
+      <link>https://gxyu-star.github.io/tags/6dof/</link>
+      <pubDate>Tue, 16 Nov 2021 00:00:00 +0000</pubDate>
+      <guid>https://gxyu-star.github.io/tags/6dof/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>SolvePnP</title>
+      <link>https://gxyu-star.github.io/tags/solvepnp/</link>
+      <pubDate>Tue, 16 Nov 2021 00:00:00 +0000</pubDate>
+      <guid>https://gxyu-star.github.io/tags/solvepnp/</guid>
+      <description></description>
+    </item>
   </channel>
 </rss>

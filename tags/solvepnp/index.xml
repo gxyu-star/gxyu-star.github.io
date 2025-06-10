@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Home on YGX</title>
-    <link>https://gxyu-star.github.io/</link>
-    <description>Recent content in Home on YGX</description>
+    <title>SolvePnP on YGX</title>
+    <link>https://gxyu-star.github.io/tags/solvepnp/</link>
+    <description>Recent content in SolvePnP on YGX</description>
     <generator>Hugo</generator>
     <language>en-us</language>
     <lastBuildDate>Tue, 16 Nov 2021 00:00:00 +0000</lastBuildDate>
-    <atom:link href="https://gxyu-star.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://gxyu-star.github.io/tags/solvepnp/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>HMD手柄跟踪时如何耦合IMU解算手柄6DOF?</title>
       <link>https://gxyu-star.github.io/post/0_6dof_pose_from_imu_and_vision_matched_points/</link>

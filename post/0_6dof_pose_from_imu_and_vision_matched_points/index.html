@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en-us"
+  dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+<link rel="icon" type="image/ico" href="https://gxyu-star.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://gxyu-star.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://gxyu-star.github.io/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="https://gxyu-star.github.io/android-chrome-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="https://gxyu-star.github.io/apple-touch-icon.png">
+
+<meta name="description" content="HMD手柄跟踪时耦合IMU解算手柄6DOF的推导过程."/>
+
+
+<meta name="fediverse:creator" content="@gxyu@instance.url">
+
+
+<title>
+    
+    HMD手柄跟踪时如何耦合IMU解算手柄6DOF? | YGX
+    
+</title>
+
+<link rel="canonical" href="https://gxyu-star.github.io/post/0_6dof_pose_from_imu_and_vision_matched_points/"/>
+
+<meta property="og:url" content="https://gxyu-star.github.io/post/0_6dof_pose_from_imu_and_vision_matched_points/">
+  <meta property="og:site_name" content="YGX">
+  <meta property="og:title" content="HMD手柄跟踪时如何耦合IMU解算手柄6DOF?">
+  <meta property="og:description" content="HMD手柄跟踪时耦合IMU解算手柄6DOF的推导过程.">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="post">
+    <meta property="article:published_time" content="2021-11-16T00:00:00+00:00">
+    <meta property="article:modified_time" content="2021-11-16T00:00:00+00:00">
+    <meta property="article:tag" content="6DOF">
+    <meta property="article:tag" content="SolvePnP">
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/combined.min.f2786ca2b6e6d26dac739b2e6b2f26429674c6f9ed9cb9f560de94d9f35b643f.css" media="all">
+
+
+
+
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-xxxxxxxxx"></script>
+      <script>
+        var doNotTrack = false;
+        if ( false ) {
+          var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+          var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-xxxxxxxxx');
+        }
+      </script>
+
+
+<script
+  async
+  defer
+  data-website-id="cc219028-551e-4f3b-bbc7-e124ca907ce0"
+  src="https://cloud.umami.is/script.js"
+></script>
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+</head>
+
+
+
+
+
+
+
+<body class="auto">
+
+  <div class="content">
+    <header>
+      
+
+<div class="header">
+
+    
+
+    <h1 class="header-title">
+        <a href="https://gxyu-star.github.io/">YGX</a>
+    </h1>
+
+    <div class="header-menu">
+        
+
+        
+        
+
+        <p
+            class="small ">
+            <a href="/" >
+                /home
+            </a>
+        </p>
+        
+
+        <p
+            class="small ">
+            <a href="post" >
+                /posts
+            </a>
+        </p>
+        
+        
+    </div>
+
+    
+
+</div>
+
+    </header>
+
+    <main class="main">
+      
+
+
+
+
+<div class="breadcrumbs"><a href="/">Home</a><span class="breadcrumbs-separator">/</span><a href="/post/">Posts</a><span class="breadcrumbs-separator">/</span>
+        <a href="/post/0_6dof_pose_from_imu_and_vision_matched_points/">HMD手柄跟踪时如何耦合IMU解算手柄6DOF?</a></div>
+
+
+<div  class="autonumber" >
+  <article>
+    <header class="single-intro-container">
+        
+        <h1 class="single-title">HMD手柄跟踪时如何耦合IMU解算手柄6DOF?</h1>
+        <p class="single-summary">本文探讨了在IMU数据已知的情况下，使用多少个2D跟踪点可以解算出手柄的6DOF位姿.</p>
+        
+        <div class="single-subsummary">
+          
+          <div>
+            
+            <p class="author">gxyu </p>
+            
+            <p class="single-date">
+              <time datetime="2021-11-16T00:00:00&#43;00:00">November 16, 2021</time>
+              &nbsp; · &nbsp;5 min read
+            </p>
+          </div>
+        </div>
+        
+    </header>
+      <aside class="toc">
+        <p><strong>Table of contents</strong></p>
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#前言">前言</a></li>
+    <li><a href="#推导">推导</a></li>
+  </ul>
+</nav>
+      </aside>
+    
+    <div class="single-content">
+      <h2 class="heading" id="前言">
+  前言
+  <a class="anchor" href="#%e5%89%8d%e8%a8%80">#</a>
+</h2>
+<p>在手柄跟踪时，由于手柄有IMU的数据，该数据如果在Pose解算时加以利用，将减少对图像中2D光点的跟踪要求。本文探讨了在IMU数据已知的情况下，使用多少个2D跟踪点可以解算出手柄的6DOF位姿。以下给出了详细的推导过程。</p>
+<h2 class="heading" id="推导">
+  推导
+  <a class="anchor" href="#%e6%8e%a8%e5%af%bc">#</a>
+</h2>
+<p>将IMU的3DOF数据利用起来，与视觉的2D-3D匹配点集耦合，进行6DOF的姿态解算。下面是理论推导过程：
+$$\begin{equation} z_c \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} = \begin{bmatrix} f_x &amp; 0 &amp;c_x \\ 0 &amp; f_y &amp; c_y\\ 0 &amp; 0 &amp; 1 \end{bmatrix} \begin{bmatrix} R | t \end{bmatrix} \begin{bmatrix} X_i \\ Y_i \\ Z_i \\ 1 \end{bmatrix} \end{equation}$$</p>
+<p>其中的旋转矩阵$R$表示Camera到模型的旋转，向量$t$表示模型在Camera坐标系下的位移。为了计算方便将模型的3D点先转到IMU的坐标系下，表示为$\begin{bmatrix} X_i &amp; Y_i &amp; Z_i &amp; 1 \end{bmatrix}^T$。在当前的应用场景中，我们由HMD定位数据可以得到Camera相对于VIO世界坐标系的旋转$^{wv}R_c$，同时由手柄的3DOF可以得到IMU相对于手柄世界坐标系的旋转$^{wi}R_i$。其中VIO的世界坐标系和IMU的世界坐标系相差一个Yaw方向的旋转，记为$^{wv}R_{wi}$。IMU相对于其世界坐标系的旋转$^{wi}R_i$可以进一步分分解为三个轴的欧拉角的转动，从而得到三个旋转矩阵的分量，如下：
+$$\begin{equation}^{wi}R_i = ^{wi}R_y * ^yR_p * ^pR_r \end{equation}$$</p>
+<p>在IMU的3DOF解算中，由于重力的作用，可以得到相对比较准确的pitch和roll，而yaw的值往往伴随着漂移。因此，三个旋转分量中$^{wi}R_y$是不准确的。将公式$(1)$中的$\begin{bmatrix} R | t \end{bmatrix}$进行展开如下：</p>
+<p>$$\begin{equation}\begin{bmatrix} R | t \end{bmatrix} = \begin{bmatrix} ^{wv}R_c^{-1} * ^{wv}R_{wi} *  ^{wi}R_y * ^yR_p * ^pR_r | t \end{bmatrix}\end{equation}$$</p>
+<p>其中$^{wv}R_{wi} *  ^{wi}R_y$和$t$是未知数，其他都是已知的。因此Pose的解算就弱化为求yaw方向的旋转，以及三维平移。为了书写方便，将几个旋转矩阵和并：$^{wv}R_c^{-1} = R_1$，$^{wv}R_{wi} *  ^{wi}R_y = R_2$，$^yR_p * ^pR_r = R_3$，那么上式可以写成：</p>
+<p>$$\begin{equation}\begin{bmatrix} R | t \end{bmatrix} = \begin{bmatrix} R_1 * R_2 * R_3 | t \end{bmatrix}\end{equation}$$</p>
+<p>其中$R_1$和$R_3$是已知的，需要求解的是$R_2$和$t$，进一步将公式$(1)$写成如下形式：</p>
+<p>$$\begin{equation}z_c \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} = \begin{bmatrix} f_x &amp; 0 &amp;c_x \\ 0 &amp; f_y &amp; c_y \\ 0 &amp; 0 &amp; 1 \end{bmatrix} \begin{bmatrix} R_1 * R_2 * R_3 | t \end{bmatrix} \begin{bmatrix} X_i \\ Y_i \\ Z_i \\ 1 \end{bmatrix}\end{equation}$$</p>
+<p>$$\Rightarrow z_c \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} = \begin{bmatrix} f_x &amp; 0 &amp;c_x \ 0 &amp; f_y &amp; c_y\ 0 &amp; 0 &amp; 1 \end{bmatrix}  R_1 * \begin{bmatrix} R_2 | R_1^{-1}t \end{bmatrix} \begin{bmatrix} R_3 &amp; 0 \\ 0 &amp; 1 \end{bmatrix} \begin{bmatrix} X_i \\ Y_i \\ Z_i \\ 1 \end{bmatrix}$$</p>
+<p>$$\Rightarrow \begin{bmatrix} f_x &amp; 0 &amp;c_x \\ 0 &amp; f_y &amp; c_y \\ 0 &amp; 0 &amp; 1 \end{bmatrix}^{-1} z_c  \begin{bmatrix} x \\ y \\ 1 \end{bmatrix} =  \begin{bmatrix} R_1 * R_2 | t \end{bmatrix} \begin{bmatrix} R_3 &amp; 0 \ 0 &amp; 1 \end{bmatrix} \begin{bmatrix} X_i \\ Y_i \\ Z_i \\ 1 \end{bmatrix}$$</p>
+<p>$$\begin{equation}\Rightarrow z_c  \begin{bmatrix} x^{&rsquo;} \\ y^{&rsquo;} \\ 1 \end{bmatrix} =  \begin{bmatrix} R_1 * R_2 | t \end{bmatrix}  \begin{bmatrix} X_i^{&rsquo;} \\ Y_i^{&rsquo;} \\ Z_i^{&rsquo;} \ 1 \end{bmatrix}\end{equation}$$</p>
+<p>其中
+$$\begin{bmatrix} x^{&rsquo;} \\ y^{&rsquo;} \\ 1 \end{bmatrix}=\begin{bmatrix} f_x &amp; 0 &amp;c_x \\ 0 &amp; f_y &amp; c_y \\ 0 &amp; 0 &amp; 1 \end{bmatrix}^{-1} \begin{bmatrix} x \\ y \\ 1 \end{bmatrix}$$</p>
+<p>$$\begin{bmatrix} X_i^{&rsquo;} \\ Y_i^{&rsquo;} \\ Z_i^{&rsquo;} \\ 1 \end{bmatrix}=\begin{bmatrix} R_3 &amp; 0 \\ 0 &amp; 1 \end{bmatrix} \begin{bmatrix} X_i \\ Y_i \\ Z_i \\ 1 \end{bmatrix}$$</p>
+<p>那么要求解的方程就变成了的公式$(6)$，为了更清楚的知道式中的未知变量，进一步将公式$(6)$展开。</p>
+<p>$$\begin{equation}\Rightarrow z_c  \begin{bmatrix} x^{&rsquo;} \\ y^{&rsquo;} \\ 1 \end{bmatrix} =  \begin{bmatrix} \begin{bmatrix} r_1 &amp; r_2 &amp; r_3 \\ r_4 &amp; r_5 &amp; r_6 \\ r_7 &amp; r_8 &amp; r_9\end{bmatrix} \begin{bmatrix} c_a &amp; -s_a &amp; 0 \\ s_a &amp; c_a &amp; 0 \\ 0 &amp; 0 &amp; 1\end{bmatrix} | \begin{bmatrix} t_0 \\ t_1 \\ t_2 \end{bmatrix} \end{bmatrix} \begin{bmatrix} X_i^{&rsquo;} \\ Y_i^{&rsquo;} \\ Z_i^{&rsquo;} \\ 1 \end{bmatrix}\end{equation}$$</p>
+<p>$$\begin{equation}\Rightarrow z_c  \begin{bmatrix} x^{&rsquo;} \\ y^{&rsquo;} \\ 1 \end{bmatrix} =  \begin{bmatrix} \begin{bmatrix} r_1c_a+r_2s_a  &amp; -r_1s_a+r_2c_a &amp; r_3 \\ r_4c_a+r_5s_a  &amp; -r_4s_a+r_5c_a &amp; r_6 \\ r_7c_a+r_8s_a  &amp; -r_7s_a+r_8c_a &amp; r_9\end{bmatrix} | \begin{bmatrix} t_0 \\ t_1 \\ t_2 \end{bmatrix} \end{bmatrix} \begin{bmatrix} X_i^{&rsquo;} \\ Y_i^{&rsquo;} \\ Z_i^{&rsquo;} \\ 1 \end{bmatrix}\end{equation}$$</p>
+<p>$$\begin{equation}\Rightarrow z_c  \begin{bmatrix} x^{&rsquo;} \\ y^{&rsquo;} \\ 1 \end{bmatrix} =  \begin{bmatrix} (r_1c_a+r_2s_a)X_i^{&rsquo;}+ (-r_1s_a+r_2c_a)Y_i^{&rsquo;} + r_3 Z_i^{&rsquo;} + t_0 \\ (r_4c_a+r_5s_a)X_i^{&rsquo;}+ (-r_4s_a+r_5c_a)Y_i^{&rsquo;} + r_6 Z_i^{&rsquo;} + t_1 \\ (r_7c_a+r_7s_a)X_i^{&rsquo;}+ (-r_7s_a+r_8c_a)Y_i^{&rsquo;} + r_9 Z_i^{&rsquo;} + t_2 \end{bmatrix} \end{equation}$$</p>
+<p>$$\begin{equation}\Rightarrow z_c  \begin{bmatrix} x^{&rsquo;} \\ y^{&rsquo;} \\ 1 \end{bmatrix} =  \begin{bmatrix} (r_1 X_i^{&rsquo;} +r_2Y_i^{&rsquo;})c_a + (r_2X_i^{&rsquo;}-r_1Y_i^{&rsquo;})s_a + r_3 Z_i^{&rsquo;} + t_0 \\ (r_4 X_i^{&rsquo;} +r_5Y_i^{&rsquo;})c_a + (r_5X_i^{&rsquo;}-r_4Y_i^{&rsquo;})s_a + r_6 Z_i^{&rsquo;} + t_1 \\ (r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;})c_a + (r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;})s_a + r_9 Z_i^{&rsquo;} + t_2 \end{bmatrix} \end{equation}$$</p>
+<p>其中$c_a \ s_a \ t_0 \ t_1 \ t_2\ z_c$是未知的。接下来通过解线性方程解出这六个未知数的。将公式$(10)$进一步展开：</p>
+<p>$$\begin{equation}\begin{cases} z_cx^{&rsquo;}=(r_1 X_i^{&rsquo;} +r_2Y_i^{&rsquo;})c_a + (r_2X_i^{&rsquo;}-r_1Y_i^{&rsquo;})s_a + r_3 Z_i^{&rsquo;} + t_0 \\ z_cy^{&rsquo;}=(r_4 X_i^{&rsquo;} +r_5Y_i^{&rsquo;})c_a + (r_5X_i^{&rsquo;}-r_4Y_i^{&rsquo;})s_a + r_6 Z_i^{&rsquo;} + t_1 \\ z_c = (r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;})c_a + (r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;})s_a + r_9 Z_i^{&rsquo;} + t_2\end{cases}\end{equation}$$</p>
+<p>$$\begin{equation}\Rightarrow\begin{cases} x^{&rsquo;}=\frac{(r_1 X_i^{&rsquo;} +r_2Y_i^{&rsquo;})c_a + (r_2X_i^{&rsquo;}-r_1Y_i^{&rsquo;})s_a + r_3 Z_i^{&rsquo;} + t_0}{(r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;})c_a + (r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;})s_a + r_9 Z_i^{&rsquo;} + t_2} \\ y^{&rsquo;}=\frac{(r_4 X_i^{&rsquo;} +r_5Y_i^{&rsquo;})c_a + (r_5X_i^{&rsquo;}-r_4Y_i^{&rsquo;})s_a + r_6 Z_i^{&rsquo;} + t_1}{(r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;})c_a + (r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;})s_a + r_9 Z_i^{&rsquo;} + t_2}\end{cases}\end{equation}$$</p>
+<p>$$\footnotesize \begin{equation}\Rightarrow\begin{cases} x^{&rsquo;}((r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;})c_a + (r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;})s_a + r_9 Z_i^{&rsquo;} + t_2) =(r_1 X_i^{&rsquo;} +r_2Y_i^{&rsquo;})c_a + (r_2X_i^{&rsquo;}-r_1Y_i^{&rsquo;})s_a + r_3 Z_i^{&rsquo;} + t_0 \\ y^{&rsquo;} ((r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;})c_a + (r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;})s_a + r_9 Z_i^{&rsquo;} + t_2)=(r_4 X_i^{&rsquo;} +r_5Y_i^{&rsquo;})c_a + (r_5X_i^{&rsquo;}-r_4Y_i^{&rsquo;})s_a + r_6 Z_i^{&rsquo;} + t_1\end{cases}\end{equation}$$</p>
+<p>$$\footnotesize \begin{equation}\Rightarrow\begin{cases} [x^{&rsquo;}(r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;}) - (r_1 X_i^{&rsquo;} +r_2Y_i^{&rsquo;})]c_a +  [x^{&rsquo;}(r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;}) - (r_2X_i^{&rsquo;}-r_1Y_i^{&rsquo;})]s_a  - t_0 +  x^{&rsquo;}t_2 = r_3 Z_i^{&rsquo;} - x^{&rsquo;}r_9 Z_i^{&rsquo;} \\ [y^{&rsquo;} (r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;}) - (r_4 X_i^{&rsquo;} +r_5Y_i^{&rsquo;})]c_a + [y^{&rsquo;}(r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;}) - (r_5X_i^{&rsquo;}-r_4Y_i^{&rsquo;})]s_a  - t_1+ y^{&rsquo;}t_2 = r_6 Z_i^{&rsquo;} - y^{&rsquo;}r_9 Z_i^{&rsquo;}\end{cases}\end{equation}$$</p>
+<p>将公式$(14)$表示成矩阵的形式：</p>
+<p>$$\begin{equation}  A*B^T=C\end{equation}$$</p>
+<p>其中：
+$$A=\begin{bmatrix} [x^{&rsquo;}(r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;}) - (r_1 X_i^{&rsquo;} +r_2Y_i^{&rsquo;})] &amp; [x^{&rsquo;}(r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;}) - (r_2X_i^{&rsquo;}-r_1Y_i^{&rsquo;})] &amp; -1 &amp; 0 &amp; x^{&rsquo;} \\ [y^{&rsquo;} (r_7 X_i^{&rsquo;} +r_8Y_i^{&rsquo;}) - (r_4 X_i^{&rsquo;} +r_5Y_i^{&rsquo;})] &amp; [y^{&rsquo;}(r_8X_i^{&rsquo;}-r_7Y_i^{&rsquo;}) - (r_5X_i^{&rsquo;}-r_4Y_i^{&rsquo;})] &amp; 0 &amp; -1 &amp; y^{&rsquo;}\end{bmatrix} $$</p>
+<p>$$B=\begin{bmatrix} c_a &amp; s_a &amp; t_0 &amp; t_1 &amp; t_2 \end{bmatrix}$$</p>
+<p>$$c=\begin{bmatrix} r_3 Z_i^{&rsquo;} - x^{&rsquo;}r_9 Z_i^{&rsquo;} \\ r_6 Z_i^{&rsquo;} - y^{&rsquo;}r_9 Z_i^{&rsquo;} \end{bmatrix}$$</p>
+<p>方程$(14)$是一个齐次线性方程组，至少需要三个点可以解出未知变量。即求解下列方程组：</p>
+<p>$$\scriptsize \begin{equation}\begin{bmatrix}[x_1^{&rsquo;}(r_7 X_{i1}^{&rsquo;} +r_8Y_{i1}^{&rsquo;}) - (r_1 X_{i1}^{&rsquo;} +r_2Y_{i1}^{&rsquo;})] &amp; [x_1^{&rsquo;}(r_8X_{i1}^{&rsquo;}-r_7Y_{i1}^{&rsquo;}) - (r_2X_{i1}^{&rsquo;}-r_1Y_{i1}^{&rsquo;})] &amp; -1 &amp; 0 &amp; x_1^{&rsquo;} \\ [y_1^{&rsquo;} (r_7 X_{i1}^{&rsquo;} +r_8Y_{i1}^{&rsquo;}) - (r_4 X_{i1}^{&rsquo;} +r_5Y_{i1}^{&rsquo;})] &amp; [y_1^{&rsquo;}(r_8X_{i1}^{&rsquo;}-r_7Y_{i1}^{&rsquo;}) - (r_5X_{i1}^{&rsquo;}-r_4Y_{i1}^{&rsquo;})] &amp; 0 &amp; -1 &amp; y_1^{&rsquo;} \\ [x_2^{&rsquo;}(r_7 X_{i2}^{&rsquo;} +r_8Y_{i2}^{&rsquo;}) - (r_1 X_{i2}^{&rsquo;} +r_2Y_{i2}^{&rsquo;})] &amp; [x_2^{&rsquo;}(r_8X_{i2}^{&rsquo;}-r_7Y_{i2}^{&rsquo;}) - (r_2X_{i2}^{&rsquo;}-r_1Y_{i2}^{&rsquo;})] &amp; -1 &amp; 0 &amp; x_2^{&rsquo;} \\ [y_2^{&rsquo;} (r_7 X_{i2}^{&rsquo;} +r_8Y_{i2}^{&rsquo;}) - (r_4 X_{i2}^{&rsquo;} +r_5Y_{i2}^{&rsquo;})] &amp; [y_2^{&rsquo;}(r_8X_{i2}^{&rsquo;}-r_7Y_{i2}^{&rsquo;}) - (r_5X_{i2}^{&rsquo;}-r_4Y_{i2}^{&rsquo;})] &amp; 0 &amp; -1 &amp; y_2^{&rsquo;} \\ [x_3^{&rsquo;}(r_7 X_{i2}^{&rsquo;} +r_8Y_{i2}^{&rsquo;}) - (r_1 X_{i2}^{&rsquo;} +r_2Y_{i2}^{&rsquo;})] &amp; [x_3^{&rsquo;}(r_8X_{i3}^{&rsquo;}-r_7Y_{i3}^{&rsquo;}) - (r_2X_{i3}^{&rsquo;}-r_1Y_{i3}^{&rsquo;})] &amp; -1 &amp; 0 &amp; x_3^{&rsquo;} \\ [y_3^{&rsquo;} (r_7 X_{i3}^{&rsquo;} +r_8Y_{i3}^{&rsquo;}) - (r_4 X_{i3}^{&rsquo;} +r_5Y_{i3}^{&rsquo;})] &amp; [y_3^{&rsquo;}(r_8X_{i3}^{&rsquo;}-r_7Y_{i3}^{&rsquo;}) - (r_5X_{i3}^{&rsquo;}-r_4Y_{i3}^{&rsquo;})] &amp; 0 &amp; -1 &amp; y_3^{&rsquo;}\end{bmatrix}*\begin{bmatrix} c_a \\ s_a \\ t_0^{&rsquo;} \\ t_1^{&rsquo;} \\ t_2^{&rsquo;}\end{bmatrix}=\begin{bmatrix} r_3 Z_{i1}^{&rsquo;} - x_1^{&rsquo;}r_9 Z_{i1}^{&rsquo;} \\ r_6 Z_{i1}^{&rsquo;} - y_1^{&rsquo;}r_9 Z_{i1}^{&rsquo;} \\ r_3 Z_{i2}^{&rsquo;} - x_2^{&rsquo;}r_9 Z_{i2}^{&rsquo;} \\ r_6 Z_{i2}^{&rsquo;} - y_2^{&rsquo;}r_9 Z_{i2}^{&rsquo;} \\ r_3 Z_{i3}^{&rsquo;} - x_3^{&rsquo;}r_9 Z_{i3}^{&rsquo;} \\ r_6 Z_{i3}^{&rsquo;} - y_3^{&rsquo;}r_9 Z_{i3}^{&rsquo;}\end{bmatrix}\end{equation}$$</p>
+<p>其中$\begin{bmatrix} x_1^{&rsquo;} &amp; y_1^{&rsquo;} &amp; z_1^{&rsquo;} \end{bmatrix}$和$\begin{bmatrix}X_{i1}^{&rsquo;} &amp; Y_{i1}^{&rsquo;} &amp; Z_{i1}^{&rsquo;} \end{bmatrix}$，$\begin{bmatrix} x_2^{&rsquo;} &amp; y_2^{&rsquo;} &amp; z_2^{&rsquo;} \end{bmatrix}$和$\begin{bmatrix}X_{i2}^{&rsquo;} &amp; Y_{i2}^{&rsquo;} &amp; Z_{i2}^{&rsquo;} \end{bmatrix}$，$\begin{bmatrix} x_2^{&rsquo;} &amp; y_2^{&rsquo;} &amp; z_2^{&rsquo;} \end{bmatrix}$和$\begin{bmatrix}X_{i3}^{&rsquo;} &amp; Y_{i3}^{&rsquo;} &amp; Z_{i3}^{&rsquo;} \end{bmatrix}$是三组匹配的点，只要三组点不是共线的，以下矩阵就是满秩的$Rank(A) = 6$，那么非齐次线性方程组$(16)$就有唯一解。</p>
+<p>至此，就解出了旋转和平移。</p>
+
+    </div>
+  </article>
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+  <div class="back-to-top">
+    <a href="#top">
+      back to top
+    </a>
+  </div>
+  
+
+</div>
+
+
+    </main>
+  </div>
+
+  
+  
+
+
+
+
+
+    
+
+
+
+
+  <footer>
+    
+
+    
+    
+
+
+
+
+
+    
+
+
+
+
+    
+    <p>Powered by
+        <a href="https://gohugo.io/">Hugo</a>
+        and
+        <a href="https://github.com/tomfran/typo">tomfran/typo</a>
+    </p>
+    
+    
+    
+
+
+  </footer>
+
+  
+  <link rel="stylesheet" 
+  href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  
+<script defer 
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+
+<script defer
+  src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body);"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false }
+      ]
+    });
+  });
+</script>
+  
+</body>
+
+<script src="/js/theme-switch.js"></script>
+<script defer src="/js/copy-code.js"></script>
+</html>

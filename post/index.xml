@@ -6,7 +6,14 @@
     <description>Recent content in Posts on YGX</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate></lastBuildDate>
+    <lastBuildDate>Tue, 16 Nov 2021 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://gxyu-star.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>HMD手柄跟踪时如何耦合IMU解算手柄6DOF?</title>
+      <link>https://gxyu-star.github.io/post/0_6dof_pose_from_imu_and_vision_matched_points/</link>
+      <pubDate>Tue, 16 Nov 2021 00:00:00 +0000</pubDate>
+      <guid>https://gxyu-star.github.io/post/0_6dof_pose_from_imu_and_vision_matched_points/</guid>
+      <description>本文探讨了在IMU数据已知的情况下，使用多少个2D跟踪点可以解算出手柄的6DOF位姿.</description>
+    </item>
   </channel>
 </rss>
